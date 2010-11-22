@@ -1,0 +1,85 @@
+<html>
+<head>
+<script>
+var mouseX;
+var mouseY;
+
+window.onload = function() {
+  picDraw();
+}
+
+function picDraw() {
+  var canvas = document.getElementById('c1');
+  var ctx = canvas.getContext('2d');
+  var img = new Image();
+  img.src = 'hoto.jpg';
+  img.onload = function() {
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    ctx.drawImage(img, 0, 0);
+    canvas.onmousemove = mouseMoveListner;
+  }
+}
+
+function mouseMoveListner(e) {
+  getMouseXY(e);
+  putsXY();
+  generateNewImage();
+}
+
+function getMouseXY(e) {
+  var rect = e.target.getBoundingClientRect();
+  mouseX = e.clientX - rect.left;
+  mouseY = e.clientY - rect.top;
+}
+
+function putsXY() {
+  var monitor = document.getElementById('monitor');
+  monitor.textContent = mouseX + ',' + mouseY;
+}
+
+function generateNewImage() {
+  var canvas = document.getElementById('c1');
+  var ctx = canvas.getContext('2d');
+  var input = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  var output = ctx.createImageData(canvas.width, canvas.height);
+  
+  var w = input.width, h = input.height;
+  var inputData = input.data;
+  var outputData = output.data;
+
+  for(var y=0; y<h; y++){
+    for(var x=0; x<w; x++){
+      var ptr = (y * w + x ) * 4; // ピクセル処理する配列の要素位置を計算
+      var R = inputData[ptr + 0];
+      var G = inputData[ptr + 1];
+      var B = inputData[ptr + 2];
+      R = 0 + Math.floor( Math.random() * R ) ;
+      G = 0 + Math.floor( Math.random() * G );
+      B = 0 + Math.floor( Math.random() * B );
+      outputData[ptr + 0] = R;
+      outputData[ptr + 1] = G;
+      outputData[ptr + 2] = B;
+      outputData[ptr + 3] = 255;
+    }
+  }
+
+  
+  
+  ctx.putImageData(output, 0, 0);
+  picDraw()
+
+
+}
+
+function randomBrightness() {
+  return 0 + Math.floor( Math.random() * 256 );
+}
+
+</script>
+</head>
+<body>
+<canvas id="c1"></canvas>
+<span id="monitor"></span>
+</body>
+</html>
