@@ -1,5 +1,6 @@
 <html>
 <head>
+<meta charset="utf-8">
 <script>
 var mouseX;
 var mouseY;
@@ -18,13 +19,13 @@ function picDraw() {
     canvas.height = img.naturalHeight;
     ctx.drawImage(img, 0, 0);
     canvas.onmousemove = mouseMoveListner;
+    effectEvent();
   }
 }
 
 function mouseMoveListner(e) {
   getMouseXY(e);
   putsXY();
-  generateNewImage();
 }
 
 function getMouseXY(e) {
@@ -38,48 +39,86 @@ function putsXY() {
   monitor.textContent = mouseX + ',' + mouseY;
 }
 
-function generateNewImage() {
+function effectEvent() {
   var canvas = document.getElementById('c1');
   var ctx = canvas.getContext('2d');
   var input = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  var output = ctx.createImageData(canvas.width, canvas.height);
   
   var w = input.width, h = input.height;
   var inputData = input.data;
-  var outputData = output.data;
+  
 
-  for(var y=0; y<h; y++){
-    for(var x=0; x<w; x++){
-      var ptr = (y * w + x ) * 4; // ピクセル処理する配列の要素位置を計算
-      var R = inputData[ptr + 0];
-      var G = inputData[ptr + 1];
-      var B = inputData[ptr + 2];
-      R = 0 + Math.floor( Math.random() * R ) ;
-      G = 0 + Math.floor( Math.random() * G );
-      B = 0 + Math.floor( Math.random() * B );
-      outputData[ptr + 0] = R;
-      outputData[ptr + 1] = G;
-      outputData[ptr + 2] = B;
-      outputData[ptr + 3] = 255;
+
+  document.getElementById('tool1').addEventListener('mouseover', binarization, false);
+  document.getElementById('tool2').addEventListener('mouseover', edgeDetection, false);
+
+
+  //二値化
+  //http://journal.mycom.co.jp/articles/2010/09/14/html5-canvas-for-black-and-white/index.html
+  function binarization(){
+    var output = ctx.createImageData(canvas.width, canvas.height);
+    var outputData = output.data;
+
+    for(var i=0, n=inputData.length; i<n; i+=4){
+      var grayscale = inputData[i  ] * .3 + inputData[i+1] * .59 + inputData[i+2] * .11;
+      outputData[i  ] = grayscale; // 赤
+      outputData[i+1] = grayscale; // 緑
+      outputData[i+2] = grayscale; // 青
+      outputData[i+3] = 255;
     }
+    ctx.putImageData(output, 0, 0);
+  }
+  
+  
+  //エッジ検出
+  //http://www.html5.jp/canvas/ref/method/getImageData.html
+  function edgeDetection() {
+    var output = ctx.createImageData(canvas.width, canvas.height);
+    var outputData = output.data;
+    for (var y = 1; y < h-1; y += 1) {
+      for (var x = 1; x < w-1; x += 1) {
+        for (var c = 0; c < 3; c += 1) {
+          var i = (y*w + x)*4 + c;
+          outputData[i] = 127 + -inputData[i - w*4 - 4] -   inputData[i - w*4] - inputData[i - w*4 + 4] +
+                                -inputData[i - 4]       + 8*inputData[i]       - inputData[i + 4] +
+                                -inputData[i + w*4 - 4] -   inputData[i + w*4] - inputData[i + w*4 + 4];
+        }
+        outputData[(y*w + x)*4 + 3] = 255; // alpha
+      }
+    }
+    ctx.putImageData(output, 0, 0);
   }
 
-  
-  
-  ctx.putImageData(output, 0, 0);
-  picDraw()
 
+  //戻す処理を一括で
+  Array.forEach(document.querySelectorAll('.effectBtn'), function(e){
+    e.addEventListener('mouseout', function(){
+      ctx.putImageData(input, 0, 0);
+    }, false);
+  });
 
 }
+
 
 function randomBrightness() {
   return 0 + Math.floor( Math.random() * 256 );
 }
 
 </script>
+<style>
+.effectBtn {
+  border: solid black 1px;
+  cursor: pointer;
+}
+</style>
 </head>
 <body>
 <canvas id="c1"></canvas>
-<span id="monitor"></span>
+<span id="monitor">-</span>
+<div id="controller">
+<span id="tool1" class="effectBtn">二値化</span>
+<span id="tool2" class="effectBtn">エッジ検出</span>
+</div>
+<div id="output"></div>
 </body>
 </html>
